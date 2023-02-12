@@ -3,10 +3,12 @@
 
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
+
 #include "Arduino.h"
 
 int lcdColumns = 16;
 int lcdRows = 2;
+
 
 // lcd1 - 0x27(39) | lcd2 - 0x25(3)
 
@@ -59,6 +61,7 @@ class LCDDisplay {
     }
 
     void background() {
+        printf("Called\n");
         if (backlightOn) {
             lcd1.noBacklight();
             lcd2.noBacklight();
@@ -67,17 +70,30 @@ class LCDDisplay {
             lcd2.backlight();
         }
         backlightOn = !backlightOn;
+
+        lcd1.backlight();
+        lcd2.backlight();
     }
 
     void menu() {
-        String lcd1Menu[2] = {"[A] Pin", "[B] Fingerprint"};
+        String lcd1Menu[2] = {"[A] Pin", "[B] Finger Print"};
         String lcd2Menu[2] = {"[C] RFID", "[D] Backlight"};
         print(lcd1Menu, 1);
         print(lcd2Menu, 2);
     }
 
+    String displayCode(String s) {
+        String codeString = "____";
+
+        for (int i = 0; i < s.length(); i++) {
+            codeString[i] = '*';
+        }
+
+        return codeString;
+    }
+
     void pinMode(String password) {
-        String lcd1PinMode[2] = {"Enter your pin!", password};
+        String lcd1PinMode[2] = {"Enter your pin!", displayCode(password)};
         String lcd2PinMode[2] = {"[C] to cancel", "[D] to enter"};
         print(lcd1PinMode, 1);
         print(lcd2PinMode, 2);
@@ -99,14 +115,17 @@ class LCDDisplay {
 
     void authentication(bool success) {
         String message = success ? "SUCCESS" : "INVALID";
-        print(message, 2, 1);
-        //delay(4000);
-        // if (success)
-        //     menu();
-        // else {
-        //     lcd1.setCursor(0, 1);
-        //     lcd1.print("");
-        // }
+        String s[2] = {"Enter your pin!", message};
+        print(s, 0);
+        delay(4000);
+        if (success) {
+            menu();
+        }
+             
+        //  else {
+        //      lcd1.setCursor(0, 1);
+        //      lcd1.print("");
+        //  }
     }
 
     void clear() {
