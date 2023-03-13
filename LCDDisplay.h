@@ -9,7 +9,6 @@
 int lcdColumns = 16;
 int lcdRows = 2;
 
-
 // lcd1 - 0x27(39) | lcd2 - 0x25(3)
 
 LiquidCrystal_I2C lcd1(0x27, lcdColumns, lcdRows);
@@ -71,8 +70,8 @@ class LCDDisplay {
         }
         backlightOn = !backlightOn;
 
-        lcd1.backlight();
-        lcd2.backlight();
+        // lcd1.backlight();
+        // lcd2.backlight();
     }
 
     void menu() {
@@ -117,10 +116,19 @@ class LCDDisplay {
         String message = success ? "SUCCESS" : "INVALID";
         String s[2] = {"Enter your pin!", message};
         print(s, 0);
-        delay(4000);
-        if (success) {
-            menu();
-        }
+        delay(1000);
+
+        // if(success) {
+
+
+        //     menu();
+        // } else {
+
+        // }
+
+        // if (success) {
+        //     menu();
+        // }
              
         //  else {
         //      lcd1.setCursor(0, 1);

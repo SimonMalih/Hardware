@@ -11,11 +11,12 @@
 
 // keypad from pins 2 to 18
 
-
 // 0 = menu
 // 1 = pin
 // 2 = fingerprint
 // 3 = rfid
+
+PWMLED led = PWMLED("", 32, 0);
 
 class AuthManager {
    private:
@@ -33,9 +34,23 @@ class AuthManager {
    public:
     LCDDisplay lcdManager = LCDDisplay();
     int mode = 0;
+    bool auth;
+    String pin;
+    int delayTime = 10000;
+    int doorDelayTime = 10000;
+    unsigned long previousTime = 0;
+    unsigned long previousDoorTimer = 0;
     void getKey() {
-        char key = keypad.getKey();
+        digitalWrite(32, auth);
+        if (auth) {
+            if(millis() - previousTime > delayTime) {
+                auth = false;
+            } else {
+                return;
+            }
+        }
 
+        char key = keypad.getKey();
         if (mode == 0) {
             menuMode(key);
             return;
@@ -64,6 +79,13 @@ class AuthManager {
     void start() {
         lcdManager.start();
         reset();
+    }
+
+    void setPin(string s) {
+        pin = "";
+        for(char c : s) {
+            pin += c;
+        }
     }
 
     void menuMode(char key) {
@@ -95,9 +117,11 @@ class AuthManager {
         if (c == 'D') {
             bool success = authenticate(buffer);
             lcdManager.authentication(success);
-            delay(3000);
             if (success) {
+                auth = true;
+                previousTime = millis();
                 reset();
+                lcdManager.menu();
             } else {
                 mode = 1;
                 buffer = "";
@@ -111,11 +135,8 @@ class AuthManager {
     }
 
     bool authenticate(String input) {
-        // get password from firebase database or maybe needs to be set
-        // manual or set when account is created and can only be viewed from
-        // the app
-        String pin = "9987";
-        return (pin.compareTo(input)) == 0;
+        String basePin = "9987";
+        return (basePin.compareTo(buffer)) == 0 || (pin.compareTo(buffer) == 0);
     }
 
     void fingerprintMode() {
@@ -139,6 +160,15 @@ class AuthManager {
             Serial.println("Incorrect password");
         buffer = "";
     }
+
+    // void doorHasOpened() {
+    //     if (millis() - previousDoorTimer > doorDelayTime) {
+    //         if(!auth) {
+    //             // send message to user database that 
+    //             // send email and sms
+    //         }
+    //     }
+    // }
 };
 
 #endif

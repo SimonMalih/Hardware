@@ -1,6 +1,8 @@
 #ifndef FORMATTER_H_
 #define FORMATTER_H_
 
+#include <ctype.h>
+#include <stdio.h>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -22,6 +24,24 @@ class Formatter {
             if ((c >= '0' && c <= '9') || c == ',')
                 number += c;
         return number;
+    }
+
+    static std::string filterWordString(const std::string &s) {
+        std::string value;
+
+        int counter = 0;
+        for (const char c : s) {
+            if(c == '"') {
+                counter++;
+            }
+
+            if(counter >= 3) {
+                if ((isAlpha(c) || isDigit(c)) && c != '"')
+                    value += c;
+            }
+        }
+
+        return value;
     }
 
     static float getFloat(const std::string &n) {
@@ -64,8 +84,20 @@ class Formatter {
         while ((pos = str.find('\n', prev)) != std::string::npos) {
             std::string subString = str.substr(prev, pos - prev);
             if (subString.find("stringValue") != std::string::npos) {
-                //int n = getInt(filterNumber(subString));
                 return Formatter::filterString(subString);
+            }
+            prev = pos + 1;
+        }
+        return "";
+    }
+
+    static std::string filterSingleString(const std::string &str) {
+        std::string::size_type pos = 0;
+        std::string::size_type prev = 0;
+        while ((pos = str.find('\n', prev)) != std::string::npos) {
+            std::string subString = str.substr(prev, pos - prev);
+            if (subString.find("stringValue") != std::string::npos) {
+                return Formatter::filterWordString(subString);
             }
             prev = pos + 1;
         }

@@ -9,13 +9,13 @@
 #include <vector>
 
 #include "Arduino.h"
+#include "CustomAlarm.h"
 #include "Device.h"
 #include "Formatter.h"
 #include "GlobalSettings.h"
-#include "CustomAlarm.h"
-
 #include "addons/RTDBHelper.h"
 #include "addons/TokenHelper.h"
+#include "AuthManager.h"
 
 using namespace std;
 
@@ -117,7 +117,7 @@ class Database {
         }
 
         if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            //Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
             string type = device.getDataType();
             int val = Formatter::filterInt(fbdo.payload().c_str(), device.getDataType());
             device.setValue(val);
@@ -148,12 +148,54 @@ class Database {
         }
     }
 
+    void readUser(GlobalSettings &settings) {
+        if (!isReady()) {
+            return;
+        }
+
+        string documentPath = "CurrentUser/CurrentUser";
+        FirebaseJson content;
+        string path = "fields/value/string";
+        content.set(path, "");
+        if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+            Serial.println("Read operation postponed to create document!");
+            return;
+        }
+
+        if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
+            settings.updateID(Formatter::filterSingleString(fbdo.payload().c_str()));
+            //printf("%s\n", fbdo.payload().c_str());
+        } else {
+            Serial.println(fbdo.errorReason());
+        }
+    }
+
+    void readPin(AuthManager &authManager) {
+        if (!isReady()) {
+            return;
+        }
+        string documentPath = "CurrentUser/Pin";
+        FirebaseJson content;
+        string path = "fields/value/string";
+        content.set(path, "");
+        if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+            Serial.println("Read operation postponed to create document!");
+            return;
+        }
+
+        if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
+            authManager.setPin(Formatter::filterSingleString(fbdo.payload().c_str()));
+        } else {
+            Serial.println(fbdo.errorReason());
+        }
+    }
+
     void writeAlarm(CustomAlarm alarm) {
         if (!isReady()) {
             return;
         }
 
-        string documentPath = "CurrentUser/Auth";
+        string documentPath = "CurrentUser/Pin";
         FirebaseJson content;
         string path = "fields/value/integerValue";
         content.set(path, (alarm.auth ? "1" : "0"));
@@ -167,24 +209,24 @@ class Database {
             Serial.println(fbdo.errorReason());
         }
     }
-    
-    void write(int value) {
-            string documentPath = "Sensor/Steps";
-            FirebaseJson content;
-            string path = "fields/value/integerValue"; // integerValue or stringValue
-            content.set(path, String(value));
 
-            if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
-                // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-                return;
-            } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-                Serial.printf("Successfully created firebase database document\n");
-                // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-                return;
-            } else {
-                Serial.println(fbdo.errorReason());
-            }
+    void write(int value) {
+        string documentPath = "Sensor/Steps";
+        FirebaseJson content;
+        string path = "fields/value/integerValue";  // integerValue or stringValue
+        content.set(path, String(value));
+
+        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
+            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+            return;
+        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+            Serial.printf("Successfully created firebase database document\n");
+            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
+            return;
+        } else {
+            Serial.println(fbdo.errorReason());
         }
+    }
 };
 
 #endif
