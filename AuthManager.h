@@ -5,9 +5,17 @@
 #define COLUMN_NUM 4  // four columns
 
 #include <Arduino.h>
+#include <HTTPClient.h>
 #include <Keypad.h>
+#include <time.h>
+
+#include <cstdlib>
+#include <iostream>
 #include <string>
+
+#include "GlobalSettings.h"
 #include "LCDDisplay.h"
+#include "Network.h"
 #include "RFID.h"
 
 // keypad from pins 2 to 18
@@ -16,7 +24,7 @@
 // 2 = fingerprint
 // 3 = rfid
 
-//PWMLED led = PWMLED("", 32, 0);
+// PWMLED led = PWMLED("", 32, 0);
 
 class AuthManager {
    private:
@@ -31,7 +39,6 @@ class AuthManager {
     byte pin_column[COLUMN_NUM] = {16, 4, 0, 2};  // GIOP16, GIOP4, GIOP0, GIOP2 connect to the column pins
     Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
     RFID rfid = RFID();
-    
 
    public:
     LCDDisplay lcdManager = LCDDisplay();
@@ -44,6 +51,7 @@ class AuthManager {
     unsigned long previousTime = 0;
     unsigned long previousDoorTimer = 0;
     unsigned long previousRfid = 0;
+    String uid = "Default";
 
     // void getRfid() {
     //     RFID rfid = RFID();
@@ -62,7 +70,25 @@ class AuthManager {
 
     void getKey() {
         digitalWrite(32, auth);
-        char key = keypad.getKey();
+        rfid.read(auth);
+        if (mode == 3) {
+            // sendNotification(true);
+            // sendNotification(false);
+            // getRfid();
+            // printf("%lf", (millis() - previousRfid > rfidDelay));
+            while (!auth && (millis() - previousRfid < rfidDelay)) {
+                // printf("in loop b\n");
+                rfid.read(auth);
+            }
+            mode = 0;
+            lcdManager.menu();
+            // printf("mode is now 0\n");
+        }
+
+        char key = ' ';  // keypad.getKey();
+
+        // keypad.getKey();
+        // printf("%s\n", uid.c_str());
         if (auth) {
             if (millis() - previousTime > delayTime) {
                 auth = false;
@@ -70,20 +96,6 @@ class AuthManager {
                 return;
             }
         }
-
-        if (mode == 3) {
-            //getRfid();
-            //printf("%lf", (millis() - previousRfid > rfidDelay));
-            while (!auth && (millis() - previousRfid < rfidDelay)) {
-                printf("in loop b\n");
-                rfid.read(auth);
-            }
-            mode = 0;
-            lcdManager.menu();
-            //printf("mode is now 0\n");
-        }
-
-
 
         // if(mode == 3) {
 
@@ -97,7 +109,6 @@ class AuthManager {
         // } else {
         //     key = keypad.getKey();
         // }
-        
 
         if (mode == 0) {
             menuMode(key);
@@ -191,13 +202,12 @@ class AuthManager {
     }
 
     void fingerprintMode(char c) {
-        if(mode != 2) {
+        if (mode != 2) {
             lcdManager.fingerprintMode();
         }
 
         if (c == 'C') {
-            
-        } 
+        }
     }
 
     void rfidMode() {
@@ -221,14 +231,43 @@ class AuthManager {
         buffer = "";
     }
 
-    // void doorHasOpened() {
-    //     if (millis() - previousDoorTimer > doorDelayTime) {
-    //         if(!auth) {
-    //             // send message to user database that
-    //             // send email and sms
-    //         }
-    //     }
-    // }
+    void openLink(String url) {
+        if ((WiFi.status() == WL_CONNECTED)) {  // Check the current connection status
+
+            // HTTPClient http;
+
+            // http.begin(url);            // Specify the URL
+            // http.GET();
+
+            // int httpCode = http.GET();  // Make the request
+
+            // if (httpCode > 0) {  // Check for the returning code
+            //     // String payload = http.getString();
+            //     // Serial.println(httpCode);
+            //     // Serial.println(payload);
+            // } else {
+            //     Serial.println("Error on HTTP request");
+            // }
+            //     http.end();  // Free the resources
+            // } else {
+            //    printf("HTTP REQUEST FAILED, NOT CONNECTED TO THE INTERNET\n");
+        }
+    }
+
+    void sendNotification(bool success) {
+        // srand(time(0));
+        String random = to_string(rand()).c_str();
+
+        String url = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;
+        if (success) {
+            url += "&type=entry";
+        } else {
+            url += "&type=intruder";
+        }
+        url += +"&random=" + random;
+        printf("link is: %s\n", url.c_str());
+        openLink(url.c_str());
+    }
 };
 
 #endif
