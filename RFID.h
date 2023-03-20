@@ -14,14 +14,22 @@ class RFID {
    public:
     String uid = "";
 
-    RFID() {
+    // RFID() {
+    //     SPI.begin();      // init SPI bus
+    //     rfid.PCD_Init();  // init MFRC522
+    //     Serial.println("Tap an RFID/NFC tag on the RFID-RC522 reader\n");
+    // }
+
+    void start() {
         SPI.begin();      // init SPI bus
         rfid.PCD_Init();  // init MFRC522
         Serial.println("Tap an RFID/NFC tag on the RFID-RC522 reader\n");
     }
 
     void read(bool &auth) {
+        //printf("in\n");
         if (rfid.PICC_IsNewCardPresent()) {    // new tag is available
+            printf("im in\n");
             if (rfid.PICC_ReadCardSerial()) {  // NUID has been readed
                 MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
                 //Serial.print("RFID/NFC Tag Type: \n");
@@ -34,9 +42,10 @@ class RFID {
                     Serial.print(rfid.uid.uidByte[i], HEX);
                 }
                 auth = true;
-
+                //previousTime = millis();
                 rfid.PICC_HaltA();       // halt PICC
                 rfid.PCD_StopCrypto1();  // stop encryption on PCD
+                delay(1);
             }
         }
     }

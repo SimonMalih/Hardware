@@ -8,15 +8,15 @@
 #include <Keypad.h>
 #include <string>
 #include "LCDDisplay.h"
+#include "RFID.h"
 
 // keypad from pins 2 to 18
-
 // 0 = menu
 // 1 = pin
 // 2 = fingerprint
 // 3 = rfid
 
-PWMLED led = PWMLED("", 32, 0);
+//PWMLED led = PWMLED("", 32, 0);
 
 class AuthManager {
    private:
@@ -30,6 +30,8 @@ class AuthManager {
     byte pin_rows[ROW_NUM] = {19, 18, 5, 17};     // GIOP19, GIOP18, GIOP5, GIOP17 connect to the row pins
     byte pin_column[COLUMN_NUM] = {16, 4, 0, 2};  // GIOP16, GIOP4, GIOP0, GIOP2 connect to the column pins
     Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
+    RFID rfid = RFID();
+    
 
    public:
     LCDDisplay lcdManager = LCDDisplay();
@@ -38,19 +40,65 @@ class AuthManager {
     String pin;
     int delayTime = 10000;
     int doorDelayTime = 10000;
+    int rfidDelay = 10000;
     unsigned long previousTime = 0;
     unsigned long previousDoorTimer = 0;
+    unsigned long previousRfid = 0;
+
+    // void getRfid() {
+    //     RFID rfid = RFID();
+
+    //     rfid.start();
+
+    //     // printf("%lf", (millis() - previousRfid > rfidDelay));
+    //     while (!auth && (millis() - previousRfid < rfidDelay)) {
+    //         printf("in loop b\n");
+    //         rfid.read(auth);
+    //     }
+    //     mode = 0;
+    //     lcdManager.menu();
+    //     // printf("mode is now 0\n");
+    // }
+
     void getKey() {
         digitalWrite(32, auth);
+        char key = keypad.getKey();
         if (auth) {
-            if(millis() - previousTime > delayTime) {
+            if (millis() - previousTime > delayTime) {
                 auth = false;
             } else {
                 return;
             }
         }
 
-        char key = keypad.getKey();
+        if (mode == 3) {
+            //getRfid();
+            //printf("%lf", (millis() - previousRfid > rfidDelay));
+            while (!auth && (millis() - previousRfid < rfidDelay)) {
+                printf("in loop b\n");
+                rfid.read(auth);
+            }
+            mode = 0;
+            lcdManager.menu();
+            //printf("mode is now 0\n");
+        }
+
+
+
+        // if(mode == 3) {
+
+        //     // if (millis() - previousRfid > rfidDelay) {
+        //     //     mode = 0;
+        //     // } else {
+        //     //     rfid.read(auth);
+        //     //     return;
+        //     // }
+        //     // return;
+        // } else {
+        //     key = keypad.getKey();
+        // }
+        
+
         if (mode == 0) {
             menuMode(key);
             return;
@@ -66,7 +114,7 @@ class AuthManager {
                 pinMode(key);
                 break;
             case 2:
-                fingerprintMode();
+                fingerprintMode(key);
                 break;
             case 3:
                 rfidMode();
@@ -79,11 +127,12 @@ class AuthManager {
     void start() {
         lcdManager.start();
         reset();
+        rfid.start();
     }
 
     void setPin(string s) {
         pin = "";
-        for(char c : s) {
+        for (char c : s) {
             pin += c;
         }
     }
@@ -98,10 +147,11 @@ class AuthManager {
                     break;
                 case 'B':
                     mode = 2;
-                    fingerprintMode();
+                    fingerprintMode(key);
                     break;
                 case 'C':
                     mode = 3;
+                    previousRfid = millis();
                     rfidMode();
                     break;
                 case 'D':
@@ -129,6 +179,7 @@ class AuthManager {
             }
             return;
         } else if (c > 48 && c < 58) {
+            printf("%c\n", &c);
             buffer += String(c);
             lcdManager.pinMode(buffer);
         }
@@ -139,12 +190,21 @@ class AuthManager {
         return (basePin.compareTo(buffer)) == 0 || (pin.compareTo(buffer) == 0);
     }
 
-    void fingerprintMode() {
-        lcdManager.fingerprintMode();
+    void fingerprintMode(char c) {
+        if(mode != 2) {
+            lcdManager.fingerprintMode();
+        }
+
+        if (c == 'C') {
+            
+        } 
     }
 
     void rfidMode() {
         lcdManager.rfidMode();
+        previousRfid = millis();
+        // rfid.read(auth, previousTime);
+        //  auth = true;
     }
 
     void reset() {
@@ -164,7 +224,7 @@ class AuthManager {
     // void doorHasOpened() {
     //     if (millis() - previousDoorTimer > doorDelayTime) {
     //         if(!auth) {
-    //             // send message to user database that 
+    //             // send message to user database that
     //             // send email and sms
     //         }
     //     }

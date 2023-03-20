@@ -60,7 +60,6 @@ class LCDDisplay {
     }
 
     void background() {
-        printf("Called\n");
         if (backlightOn) {
             lcd1.noBacklight();
             lcd2.noBacklight();
@@ -69,9 +68,6 @@ class LCDDisplay {
             lcd2.backlight();
         }
         backlightOn = !backlightOn;
-
-        // lcd1.backlight();
-        // lcd2.backlight();
     }
 
     void menu() {
@@ -106,7 +102,7 @@ class LCDDisplay {
     }
 
     void rfidMode() {
-        String lcd1PinMode[2] = {"Press RFID card", "on the scanner"};
+        String lcd1PinMode[2] = {"Tap RFID card", "on the scanner"};
         String lcd2PinMode[2] = {"[C] to cancel", ""};
         print(lcd1PinMode, 1);
         print(lcd2PinMode, 2);
@@ -117,23 +113,6 @@ class LCDDisplay {
         String s[2] = {"Enter your pin!", message};
         print(s, 0);
         delay(1000);
-
-        // if(success) {
-
-
-        //     menu();
-        // } else {
-
-        // }
-
-        // if (success) {
-        //     menu();
-        // }
-             
-        //  else {
-        //      lcd1.setCursor(0, 1);
-        //      lcd1.print("");
-        //  }
     }
 
     void clear() {
