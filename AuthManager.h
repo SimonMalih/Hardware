@@ -1,30 +1,23 @@
-#ifndef AUTHMANAGER_H
-#define AUTHMANAGER_H
-
-#define ROW_NUM 4     // four rows
-#define COLUMN_NUM 4  // four columns
+#pragma once
 
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <Keypad.h>
 #include <time.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
 #include "GlobalSettings.h"
 #include "LCDDisplay.h"
 #include "Network.h"
 #include "RFID.h"
 
-// keypad from pins 2 to 18
-// 0 = menu
-// 1 = pin
-// 2 = fingerprint
-// 3 = rfid
-
-// PWMLED led = PWMLED("", 32, 0);
+#define ROW_NUM 4     // four rows
+#define COLUMN_NUM 4  // four columns
+#define MENU 0
+#define PIN 1
+#define FINGERPRINT 2
+#define ID 3
 
 class AuthManager {
    private:
@@ -42,8 +35,8 @@ class AuthManager {
 
    public:
     LCDDisplay lcdManager = LCDDisplay();
-    int mode = 0;
-    bool auth;
+    int mode = MENU;
+    bool auth = false;
     String pin;
     int delayTime = 10000;
     int doorDelayTime = 10000;
@@ -53,62 +46,27 @@ class AuthManager {
     unsigned long previousRfid = 0;
     String uid = "Default";
 
-    // void getRfid() {
-    //     RFID rfid = RFID();
-
-    //     rfid.start();
-
-    //     // printf("%lf", (millis() - previousRfid > rfidDelay));
-    //     while (!auth && (millis() - previousRfid < rfidDelay)) {
-    //         printf("in loop b\n");
-    //         rfid.read(auth);
-    //     }
-    //     mode = 0;
-    //     lcdManager.menu();
-    //     // printf("mode is now 0\n");
-    // }
-
     void getKey() {
         digitalWrite(32, auth);
-        rfid.read(auth);
-        if (mode == 3) {
-            // sendNotification(true);
-            // sendNotification(false);
-            // getRfid();
-            // printf("%lf", (millis() - previousRfid > rfidDelay));
-            while (!auth && (millis() - previousRfid < rfidDelay)) {
-                // printf("in loop b\n");
-                rfid.read(auth);
-            }
-            mode = 0;
-            lcdManager.menu();
-            // printf("mode is now 0\n");
-        }
 
-        char key = ' ';  // keypad.getKey();
-
-        // keypad.getKey();
-        // printf("%s\n", uid.c_str());
         if (auth) {
             if (millis() - previousTime > delayTime) {
                 auth = false;
-            } else {
-                return;
+                mode = 0;
+                lcdManager.menu();
             }
         }
 
-        // if(mode == 3) {
-
-        //     // if (millis() - previousRfid > rfidDelay) {
-        //     //     mode = 0;
-        //     // } else {
-        //     //     rfid.read(auth);
-        //     //     return;
-        //     // }
-        //     // return;
-        // } else {
-        //     key = keypad.getKey();
-        // }
+        if(mode == ID) {
+            if (millis() - previousRfid > rfidDelay) {
+                mode = 0;
+                lcdManager.menu();
+            } else {
+                if(!auth)
+                    rfid.read(auth, previousTime);
+            }
+        }
+        char key = keypad.getKey();
 
         if (mode == 0) {
             menuMode(key);
@@ -162,7 +120,7 @@ class AuthManager {
                     break;
                 case 'C':
                     mode = 3;
-                    previousRfid = millis();
+                    lcdManager.rfidMode();
                     rfidMode();
                     break;
                 case 'D':
@@ -211,10 +169,7 @@ class AuthManager {
     }
 
     void rfidMode() {
-        lcdManager.rfidMode();
         previousRfid = millis();
-        // rfid.read(auth, previousTime);
-        //  auth = true;
     }
 
     void reset() {
@@ -270,4 +225,3 @@ class AuthManager {
     }
 };
 
-#endif

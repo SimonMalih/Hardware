@@ -5,35 +5,33 @@
 #include <SPI.h>
 #include "Arduino.h"
 
-#define SS_PIN 5    // ESP32 pin GIOP5
-#define RST_PIN 27  // ESP32 pin GIOP27
+#define HSPI_MISO 12
+#define HSPI_MOSI 13
+#define HSPI_SCLK 14
+#define HSPI_SS 15
+#define HSPI_RST 27
 
-MFRC522 rfid(SS_PIN, RST_PIN);
+MFRC522 rfid(HSPI_SS, HSPI_RST);
 
 class RFID {
    public:
     String uid = "";
 
-    // RFID() {
-    //     SPI.begin();      // init SPI bus
-    //     rfid.PCD_Init();  // init MFRC522
-    //     Serial.println("Tap an RFID/NFC tag on the RFID-RC522 reader\n");
-    // }
+    RFID() {
+    }
 
     void start() {
-        SPI.begin();      // init SPI bus
-        rfid.PCD_Init();  // init MFRC522
+        SPI.begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);  // init SPI bus
+        rfid.PCD_Init();                                      // init MFRC522
         Serial.println("Tap an RFID/NFC tag on the RFID-RC522 reader\n");
     }
 
-    void read(bool &auth) {
-        //printf("in\n");
+    void read(bool &auth, unsigned long &previousTime) {
         if (rfid.PICC_IsNewCardPresent()) {    // new tag is available
-            printf("im in\n");
             if (rfid.PICC_ReadCardSerial()) {  // NUID has been readed
                 MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
                 //Serial.print("RFID/NFC Tag Type: \n");
-                Serial.println(rfid.PICC_GetTypeName(piccType));
+                //Serial.println(rfid.PICC_GetTypeName(piccType));
 
                 // print UID in Serial Monitor in the hex format
                 Serial.print("UID:");
@@ -42,10 +40,12 @@ class RFID {
                     Serial.print(rfid.uid.uidByte[i], HEX);
                 }
                 auth = true;
-                //previousTime = millis();
+                previousTime = millis();
+                Serial.println();
+                // previousTime = millis();
                 rfid.PICC_HaltA();       // halt PICC
                 rfid.PCD_StopCrypto1();  // stop encryption on PCD
-                delay(1);
+                delay(1000);
             }
         }
     }
