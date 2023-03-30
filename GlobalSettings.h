@@ -2,7 +2,6 @@
 #define GLOBAL_SETTINGS_H_
 
 #include <Arduino.h>
-
 #include <iostream>
 #include <sstream>
 #include <vector>

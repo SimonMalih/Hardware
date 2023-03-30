@@ -30,27 +30,6 @@ class Network {
         Serial.println(WiFi.localIP());
         Serial.println();
     }
-
-    // static void openLink(String url) {
-    //     if ((WiFi.status() == WL_CONNECTED)) {  // Check the current connection status
-
-    //         HTTPClient http;
-
-    //         http.begin(url);  // Specify the URL
-    //         int httpCode = http.GET();                                         // Make the request
-
-    //         if (httpCode > 0) {  // Check for the returning code
-    //             String payload = http.getString();
-    //             Serial.println(httpCode);
-    //             Serial.println(payload);
-    //         } else {
-    //             Serial.println("Error on HTTP request");
-    //         }
-    //         http.end();  // Free the resources
-    //     } else {
-    //         printf("HTTP REQUEST FAILED, NOT CONNECTED TO THE INTERNET\n");
-    //     }
-    // }
 };
 
 #endif

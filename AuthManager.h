@@ -46,6 +46,29 @@ class AuthManager {
     unsigned long previousRfid = 0;
     String uid = "Default";
 
+    // send message to 
+    void sendIntruderMessage(String uid, bool success) {
+        if (WiFi.status() != WL_CONNECTED) {
+            printf("Wifi is not connected, http request failed!\n");
+            return;
+        }
+
+        srand((unsigned)time(NULL));
+        String random = to_string(rand()).c_str();
+        HTTPClient http;
+        String base = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;    
+        String type = success ? "&type=entry" : "&type=intruder";
+        String url = base + type + "&randomesp32=" + random;
+        http.begin(url);
+        int httpCode = http.GET();  // Make te request
+        printf("network request made to: %s\n", url.c_str());
+        if (httpCode > 0) {
+            printf("HTTP request failed with code: %d\n", &httpCode);
+        }
+        http.end();  // Free the resources
+        delay(10000);
+    }
+
     void getKey() {
         digitalWrite(32, auth);
 
@@ -55,15 +78,18 @@ class AuthManager {
                 mode = 0;
                 lcdManager.menu();
             }
+            return;
         }
 
-        if(mode == ID) {
+        if (mode == ID) {
             if (millis() - previousRfid > rfidDelay) {
                 mode = 0;
                 lcdManager.menu();
             } else {
-                if(!auth)
+                if (!auth) {
                     rfid.read(auth, previousTime);
+                }
+                    
             }
         }
         char key = keypad.getKey();
@@ -185,43 +211,4 @@ class AuthManager {
             Serial.println("Incorrect password");
         buffer = "";
     }
-
-    void openLink(String url) {
-        if ((WiFi.status() == WL_CONNECTED)) {  // Check the current connection status
-
-            // HTTPClient http;
-
-            // http.begin(url);            // Specify the URL
-            // http.GET();
-
-            // int httpCode = http.GET();  // Make the request
-
-            // if (httpCode > 0) {  // Check for the returning code
-            //     // String payload = http.getString();
-            //     // Serial.println(httpCode);
-            //     // Serial.println(payload);
-            // } else {
-            //     Serial.println("Error on HTTP request");
-            // }
-            //     http.end();  // Free the resources
-            // } else {
-            //    printf("HTTP REQUEST FAILED, NOT CONNECTED TO THE INTERNET\n");
-        }
-    }
-
-    void sendNotification(bool success) {
-        // srand(time(0));
-        String random = to_string(rand()).c_str();
-
-        String url = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;
-        if (success) {
-            url += "&type=entry";
-        } else {
-            url += "&type=intruder";
-        }
-        url += +"&random=" + random;
-        printf("link is: %s\n", url.c_str());
-        openLink(url.c_str());
-    }
 };
-
