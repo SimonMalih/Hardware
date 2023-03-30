@@ -57,7 +57,11 @@ class AuthManager {
         String random = to_string(rand()).c_str();
         HTTPClient http;
         String base = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;    
+<<<<<<< HEAD
         String type = success ? "&type=entry" : "&type=intruder";
+=======
+        String type = success ? "&type=entryyayay" : "&type=intruderyeye";
+>>>>>>> 3e55d44e163886829d6eab3a2af33fe463989a93
         String url = base + type + "&randomesp32=" + random;
         http.begin(url);
         int httpCode = http.GET();  // Make te request
@@ -86,7 +90,11 @@ class AuthManager {
                 mode = 0;
                 lcdManager.menu();
             } else {
+<<<<<<< HEAD
                 if (!auth) {
+=======
+                if (!auth)
+>>>>>>> 3e55d44e163886829d6eab3a2af33fe463989a93
                     rfid.read(auth, previousTime);
                 }
                     
@@ -211,4 +219,24 @@ class AuthManager {
             Serial.println("Incorrect password");
         buffer = "";
     }
+<<<<<<< HEAD
+=======
+
+
+    // also check if the user needs to send emails etc...
+    void sendNotification(bool success) {
+        // srand(time(0));
+        String random = to_string(rand()).c_str();
+
+        String url = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;
+        if (success) {
+            url += "&type=entry";
+        } else {
+            url += "&type=intruder";
+        }
+        url += +"&random=" + random;
+        printf("link is: %s\n", url.c_str());
+        openLink(url.c_str());
+    }
+>>>>>>> 3e55d44e163886829d6eab3a2af33fe463989a93
 };
