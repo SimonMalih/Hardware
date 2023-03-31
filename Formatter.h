@@ -36,7 +36,7 @@ class Formatter {
             }
 
             if(counter >= 3) {
-                if ((isAlpha(c) || isDigit(c)) && c != '"')
+                if ((isAlpha(c) || isDigit(c)) || c == '|' || c == '.' || c == '@' || c == ' ' && c != '"')
                     value += c;
             }
         }

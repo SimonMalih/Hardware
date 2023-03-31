@@ -2,20 +2,17 @@
 #define DATABASE_H_
 
 #include <Firebase_ESP_Client.h>
-
 #include <iostream>
 #include <regex>
 #include <string>
 #include <vector>
 
 #include "Arduino.h"
-#include "CustomAlarm.h"
 #include "Device.h"
 #include "Formatter.h"
 #include "GlobalSettings.h"
 #include "addons/RTDBHelper.h"
 #include "addons/TokenHelper.h"
-#include "AuthManager.h"
 
 using namespace std;
 
@@ -142,8 +139,8 @@ class Database {
         }
 
         if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            settings.updateSettings(Formatter::filterString(fbdo.payload().c_str(), "stringValue"));
-            settings.printSettings();
+            //settings.updateSettings(Formatter::filterString(fbdo.payload().c_str(), "stringValue"));
+            //settings.printSettings();
         } else {
             Serial.println(fbdo.errorReason());
         }
@@ -164,18 +161,18 @@ class Database {
         }
 
         if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            settings.updateID(Formatter::filterSingleString(fbdo.payload().c_str()));
+            //settings.updateID(Formatter::filterSingleString(fbdo.payload().c_str()));
             //printf("%s\n", fbdo.payload().c_str());
         } else {
             Serial.println(fbdo.errorReason());
         }
     }
 
-    void readPin(AuthManager &authManager) {
+    void readUserInfo(GlobalSettings &settings) {
         if (!isReady()) {
             return;
         }
-        string documentPath = "CurrentUser/Pin";
+        string documentPath = "CurrentUser/Info";
         FirebaseJson content;
         string path = "fields/value/string";
         content.set(path, "");
@@ -185,13 +182,34 @@ class Database {
         }
 
         if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            authManager.setPin(Formatter::filterSingleString(fbdo.payload().c_str()));
+            string value = Formatter::filterSingleString(fbdo.payload().c_str());
+            settings.updateUser(value);
         } else {
             Serial.println(fbdo.errorReason());
         }
     }
 
-    void writeAlarm(CustomAlarm alarm) {
+    // void readPin(AuthManager &authManager) {
+    //     if (!isReady()) {
+    //         return;
+    //     }
+    //     string documentPath = "CurrentUser/Pin";
+    //     FirebaseJson content;
+    //     string path = "fields/value/string";
+    //     content.set(path, "");
+    //     if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+    //         Serial.println("Read operation postponed to create document!");
+    //         return;
+    //     }
+
+    //     if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
+    //         authManager.setPin(Formatter::filterSingleString(fbdo.payload().c_str()));
+    //     } else {
+    //         Serial.println(fbdo.errorReason());
+    //     }
+    // }
+
+    void writePin(bool auth) {
         if (!isReady()) {
             return;
         }
@@ -199,7 +217,7 @@ class Database {
         string documentPath = "CurrentUser/Pin";
         FirebaseJson content;
         string path = "fields/value/integerValue";
-        content.set(path, (alarm.auth ? "1" : "0"));
+        content.set(path, (auth ? "1" : "0"));
 
         if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
             return;

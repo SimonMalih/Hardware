@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <HTTPClient.h>
 #include <Keypad.h>
 #include <time.h>
 
@@ -49,34 +48,36 @@ class AuthManager {
     unsigned long previousRfid = 0;
     unsigned long previousFinger = 0;
     unsigned long previousMessage = 0;
-    String uid = "Default";
+    int updateDelay = 45000;
+    unsigned long previousUpdateTime = 0;
+    //String uid = "Default";
+    GlobalSettings globalSettings;
+    Database database;
 
    public:
-    // send message to
-    void sendIntruderMessage(String uid, bool success) {
-        if (WiFi.status() != WL_CONNECTED) {
-            printf("Wifi is not connected, http request failed!\n");
-            return;
-        }
-
-        srand((unsigned)time(NULL));
-        String random = to_string(rand()).c_str();
-        HTTPClient http;
-        String base = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;
-        String type = success ? "&type=entry" : "&type=intruder";
-        String url = base + type + "&randomesp32value=" + random;
-        http.begin(url);
-        int httpCode = http.GET();  // Make te request
-        printf("network request made to: %s\n", url.c_str());
-        if (httpCode > 0) {
-            printf("HTTP request failed with code: %d\n", &httpCode);
-        }
-        http.end();  // Free the resources
-        delay(10000);
+    void start() {
+        globalSettings = GlobalSettings();
+        database = Database();
+        database.readUserInfo(globalSettings);
+        globalSettings.sendEmail(true);
+        globalSettings.sendEmail(false);
+        previousUpdateTime = millis();
+        lcdManager.start();
+        reset();
+        fingerScanner.fsSetup();
+        rfid.start();
     }
 
     void getKey() {
         digitalWrite(32, auth);
+
+        if (millis() - previousUpdateTime < updateDelay) {
+            //printf("Update not ready\n");
+        } else {
+            previousUpdateTime = millis();
+            database.readUserInfo(globalSettings);
+        }
+
         if (auth) {
             if (millis() - previousTime > delayTime) {
                 auth = false;
@@ -135,14 +136,7 @@ class AuthManager {
         }
     }
 
-    void start() {
-        lcdManager.start();
-        reset();
-        fingerScanner.fsSetup();
-        rfid.start();
-    }
-
-    void setPin(string s) {
+        void setPin(string s) {
         pin = "";
         for (char c : s) {
             pin += c;
