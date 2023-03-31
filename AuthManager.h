@@ -4,12 +4,14 @@
 #include <HTTPClient.h>
 #include <Keypad.h>
 #include <time.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
+
+#include "FingerprintScanner.h"
 #include "GlobalSettings.h"
 #include "LCDDisplay.h"
-#include "Network.h"
 #include "RFID.h"
 
 #define ROW_NUM 4     // four rows
@@ -28,12 +30,11 @@ class AuthManager {
         {'7', '8', '9', 'C'},
         {'*', '0', '#', 'D'}};
 
-    byte pin_rows[ROW_NUM] = {19, 18, 5, 17};     // GIOP19, GIOP18, GIOP5, GIOP17 connect to the row pins
-    byte pin_column[COLUMN_NUM] = {16, 4, 0, 2};  // GIOP16, GIOP4, GIOP0, GIOP2 connect to the column pins
+    byte pin_rows[ROW_NUM] = {19, 18, 5, 33};     // GIOP19, GIOP18, GIOP5, GIOP33 connect to the row pins
+    byte pin_column[COLUMN_NUM] = {25, 4, 0, 2};  // GIOP25, GIOP4, GIOP0, GIOP2 connect to the column pins
     Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
     RFID rfid = RFID();
-
-   public:
+    FingerprintScanner fingerScanner = FingerprintScanner();
     LCDDisplay lcdManager = LCDDisplay();
     int mode = MENU;
     bool auth = false;
@@ -41,11 +42,16 @@ class AuthManager {
     int delayTime = 10000;
     int doorDelayTime = 10000;
     int rfidDelay = 10000;
+    int fingerDelay = 10000;
+    int messageDelay = 10000;
     unsigned long previousTime = 0;
     unsigned long previousDoorTimer = 0;
     unsigned long previousRfid = 0;
+    unsigned long previousFinger = 0;
+    unsigned long previousMessage = 0;
     String uid = "Default";
 
+   public:
     // send message to
     void sendIntruderMessage(String uid, bool success) {
         if (WiFi.status() != WL_CONNECTED) {
@@ -58,7 +64,7 @@ class AuthManager {
         HTTPClient http;
         String base = "https://us-central1-iothome-a8984.cloudfunctions.net/writeNotification?uid=" + uid;
         String type = success ? "&type=entry" : "&type=intruder";
-        String url = base + type + "&randomesp32=" + random;
+        String url = base + type + "&randomesp32value=" + random;
         http.begin(url);
         int httpCode = http.GET();  // Make te request
         printf("network request made to: %s\n", url.c_str());
@@ -71,7 +77,6 @@ class AuthManager {
 
     void getKey() {
         digitalWrite(32, auth);
-
         if (auth) {
             if (millis() - previousTime > delayTime) {
                 auth = false;
@@ -89,9 +94,20 @@ class AuthManager {
                 if (!auth) {
                     rfid.read(auth, previousTime);
                 }
-                    
             }
         }
+
+        if (mode == FINGERPRINT) {
+            if (millis() - previousFinger > fingerDelay) {
+                mode = 0;
+                lcdManager.menu();
+            } else {
+                if (!auth) {
+                    fingerScanner.readSensor(auth, previousTime);
+                }
+            }
+        }
+
         char key = keypad.getKey();
 
         if (mode == 0) {
@@ -109,7 +125,7 @@ class AuthManager {
                 pinMode(key);
                 break;
             case 2:
-                fingerprintMode(key);
+                fingerprintMode();
                 break;
             case 3:
                 rfidMode();
@@ -122,6 +138,7 @@ class AuthManager {
     void start() {
         lcdManager.start();
         reset();
+        fingerScanner.fsSetup();
         rfid.start();
     }
 
@@ -142,7 +159,8 @@ class AuthManager {
                     break;
                 case 'B':
                     mode = 2;
-                    fingerprintMode(key);
+                    lcdManager.fingerprintMode();
+                    fingerprintMode();
                     break;
                 case 'C':
                     mode = 3;
@@ -174,7 +192,7 @@ class AuthManager {
             }
             return;
         } else if (c > 48 && c < 58) {
-            printf("%c\n", &c);
+            // printf("%s\n", String(c).c_str());
             buffer += String(c);
             lcdManager.pinMode(buffer);
         }
@@ -185,13 +203,11 @@ class AuthManager {
         return (basePin.compareTo(buffer)) == 0 || (pin.compareTo(buffer) == 0);
     }
 
-    void fingerprintMode(char c) {
-        if (mode != 2) {
-            lcdManager.fingerprintMode();
-        }
-
-        if (c == 'C') {
-        }
+    void fingerprintMode() {
+        previousFinger = millis();
+        // if (mode != 2) {
+        //     lcdManager.fingerprintMode();
+        // }
     }
 
     void rfidMode() {

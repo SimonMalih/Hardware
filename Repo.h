@@ -12,5 +12,6 @@
 #include "Network.h"
 #include "AuthManager.h"
 #include "LCDDisplay.h"
+#include "FingerprintScanner.h"
 
 #endif
