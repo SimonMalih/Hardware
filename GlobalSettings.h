@@ -16,16 +16,15 @@ const int globalLength = 4;
 
 class GlobalSettings {
    private:
-    bool email, sms, push;
     vector<string> splitStrings;
-    bool settings[4] = {true, true, true, true};
+    bool settings[4] = {true, true, true, true};  // email, sms, telegram, push
     string userId = "Default";
     string number = "Default";
     string emailAdr = "Default";
     string name = "Default";
     enum RequestType { NOTIFICATION,
-                EMAIL,
-                SMS };
+                       EMAIL,
+                       SMS };
 
     void updateSettings(string s) {
         for (int i = 0; i < 4; i++) {
@@ -49,6 +48,48 @@ class GlobalSettings {
     String getRandomString() {
         srand((unsigned)time(NULL));
         return to_string(rand()).c_str();
+    }
+
+    void makeRequest(String url) {
+        if (WiFi.status() != WL_CONNECTED) {
+            printf("Wifi is not connected, http request failed!\n");
+            return;
+        }
+
+        HTTPClient http;
+        http.begin(url);
+        int httpCode = http.GET();  
+        printf("Network request: %s\n", url.c_str());
+        if (httpCode > 0) {
+            printf("HTTP request failed with code: %d\n", &httpCode);
+        }
+        http.end();  // Free the resources
+        return;
+    }
+
+    String buildURL(String type) {
+        String id = userId.c_str();
+        return "https://us-central1-iothome-a8984.cloudfunctions.net/" + type + "?uid=" + id + "&";
+    }
+
+    void sendSMS(bool success) {
+        String function = success ? "smsAuthorizedAccess" : "smsUnauthorizedAccess";
+        String base = buildURL(function);
+        String numberStr = number.c_str();
+        String nameStr = name.c_str();
+        String appendExtra = "name=" + nameStr + "&number=" + numberStr;
+        String url = base + appendExtra + "&randomESP32value=" + getRandomString();
+        makeRequest(url);
+    }
+
+    void sendEmail(bool success) {
+        String function = success ? "emailAutorizedAccess" : "emailUnautorizedAccess";
+        String base = buildURL(function);
+        String emailStr = emailAdr.c_str();
+        String nameStr = name.c_str();
+        String appendExtra = "name=" + nameStr + "&email=" + emailStr;
+        String url = base + appendExtra + "&randomESP32value=" + getRandomString();
+        makeRequest(url);
     }
 
    public:
@@ -78,26 +119,7 @@ class GlobalSettings {
         }
     }
 
-    void makeRequest(String url) {
-        if (WiFi.status() != WL_CONNECTED) {
-            printf("Wifi is not connected, http request failed!\n");
-            return;
-        }
-
-        HTTPClient http;
-        http.begin(url);
-        int httpCode = http.GET();  // Make te request
-        printf("Network request: %s\n", url.c_str());
-        if (httpCode > 0) {
-            printf("HTTP request failed with code: %d\n", &httpCode);
-        }
-        http.end();  // Free the resources
-    }
-
-    String buildURL(String type) {
-        String id = userId.c_str();
-        return "https://us-central1-iothome-a8984.cloudfunctions.net/" + type + "?uid=" + id + "&";
-    }
+    
 
     void sendMessage(bool success) {
         String base = buildURL("writeNotification");
@@ -105,31 +127,14 @@ class GlobalSettings {
         String url = base + type + "&randomESP32value=" + getRandomString();
         makeRequest(url);
 
-        if(email)
+        if (settings[0])
             sendEmail(success);
-        if(sms)
-            sendSMS(success);
+
+        // if (settings[1])
+        //     sendSMS(success);
     }
 
-    void sendSMS(bool success) {
-        String function = success ? "smsAuthorizedAccess" : "smsUnauthorizedAccess";
-        String base = buildURL(function);
-        String numberStr = number.c_str();
-        String nameStr = name.c_str();
-        String appendExtra = "name=" + nameStr + "&number=" + numberStr;
-        String url = base + appendExtra + "&randomESP32value=" + getRandomString();
-        makeRequest(url);
-    }
 
-    void sendEmail(bool success) {
-        String function = success ? "emailAutorizedAccess" : "emailUnautorizedAccess";
-        String base = buildURL(function);
-        String emailStr = emailAdr.c_str();
-        String nameStr = name.c_str();
-        String appendExtra = "name=" + nameStr + "&email=" + emailStr;
-        String url = base + appendExtra + "&randomESP32value=" + getRandomString();
-        makeRequest(url);
-    }
 };
 
 #endif

@@ -19,6 +19,7 @@
 #define PIN 1
 #define FINGERPRINT 2
 #define ID 3
+#define SOLENOID_LOCK_PIN 32
 
 class AuthManager {
    private:
@@ -37,7 +38,6 @@ class AuthManager {
     LCDDisplay lcdManager = LCDDisplay();
     int mode = MENU;
     bool auth = false;
-    String pin;
     int delayTime = 10000;
     int doorDelayTime = 10000;
     int rfidDelay = 10000;
@@ -48,19 +48,33 @@ class AuthManager {
     unsigned long previousRfid = 0;
     unsigned long previousFinger = 0;
     unsigned long previousMessage = 0;
+    int doorDelay = 10000;
+    String pin = "";
     int updateDelay = 45000;
+    int doorState = 0;
     unsigned long previousUpdateTime = 0;
     //String uid = "Default";
     GlobalSettings globalSettings;
     Database database;
+    int doorSensorPin = 26;
+
+    void checkDoor() {
+        doorState = digitalRead(doorSensorPin);
+        
+        if(doorState == LOW && !auth) {
+            if (millis() - previousDoorTimer > doorDelay) {
+                printf("Intruder message sent!\n");
+                globalSettings.sendMessage(false);
+                previousDoorTimer = millis();
+            }
+        }
+    }
 
    public:
     void start() {
         globalSettings = GlobalSettings();
         database = Database();
         database.readUserInfo(globalSettings);
-        globalSettings.sendEmail(true);
-        globalSettings.sendEmail(false);
         previousUpdateTime = millis();
         lcdManager.start();
         reset();
@@ -69,7 +83,9 @@ class AuthManager {
     }
 
     void getKey() {
-        digitalWrite(32, auth);
+        digitalWrite(SOLENOID_LOCK_PIN, auth);
+
+        checkDoor();
 
         if (millis() - previousUpdateTime < updateDelay) {
             //printf("Update not ready\n");
@@ -94,6 +110,10 @@ class AuthManager {
             } else {
                 if (!auth) {
                     rfid.read(auth, previousTime);
+                    if(auth) {
+                        digitalWrite(SOLENOID_LOCK_PIN, auth);
+                        globalSettings.sendMessage(true);
+                    }
                 }
             }
         }
@@ -104,7 +124,11 @@ class AuthManager {
                 lcdManager.menu();
             } else {
                 if (!auth) {
-                    fingerScanner.readSensor(auth, previousTime);
+                    fingerScanner.readSensor(auth, previousFinger);
+                    if (auth) {
+                        digitalWrite(SOLENOID_LOCK_PIN, auth);
+                        globalSettings.sendMessage(true);
+                    }
                 }
             }
         }
@@ -179,6 +203,9 @@ class AuthManager {
                 previousTime = millis();
                 reset();
                 lcdManager.menu();
+                digitalWrite(SOLENOID_LOCK_PIN, auth);
+                globalSettings.sendMessage(true);
+                
             } else {
                 mode = 1;
                 buffer = "";
@@ -194,14 +221,13 @@ class AuthManager {
 
     bool authenticate(String input) {
         String basePin = "9987";
-        return (basePin.compareTo(buffer)) == 0 || (pin.compareTo(buffer) == 0);
+        String currentPin = globalSettings.pin.c_str();
+        return (basePin.compareTo(buffer)) == 0 || (currentPin.compareTo(buffer) == 0);
     }
 
     void fingerprintMode() {
         previousFinger = millis();
-        // if (mode != 2) {
-        //     lcdManager.fingerprintMode();
-        // }
+
     }
 
     void rfidMode() {
