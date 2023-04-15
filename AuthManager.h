@@ -3,14 +3,13 @@
 #include <Arduino.h>
 #include <Keypad.h>
 #include <time.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
 #include "FingerprintScanner.h"
 #include "GlobalSettings.h"
 #include "LCDDisplay.h"
+#include "Network.h"
 #include "RFID.h"
 
 #define ROW_NUM 4     // four rows
@@ -20,6 +19,7 @@
 #define FINGERPRINT 2
 #define ID 3
 #define SOLENOID_LOCK_PIN 32
+#define DOOR_SENSOR_PIN 26
 
 class AuthManager {
    private:
@@ -35,7 +35,6 @@ class AuthManager {
     Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
     RFID rfid = RFID();
     FingerprintScanner fingerScanner = FingerprintScanner();
-    LCDDisplay lcdManager = LCDDisplay();
     int mode = MENU;
     bool auth = false;
     int delayTime = 10000;
@@ -53,15 +52,13 @@ class AuthManager {
     int updateDelay = 45000;
     int doorState = 0;
     unsigned long previousUpdateTime = 0;
-    //String uid = "Default";
     GlobalSettings globalSettings;
     Database database;
     int doorSensorPin = 26;
 
     void checkDoor() {
         doorState = digitalRead(doorSensorPin);
-        
-        if(doorState == LOW && !auth) {
+        if (doorState == HIGH && !auth) {
             if (millis() - previousDoorTimer > doorDelay) {
                 printf("Intruder message sent!\n");
                 globalSettings.sendMessage(false);
@@ -70,25 +67,38 @@ class AuthManager {
         }
     }
 
+    void grantAccess() {
+        lcdManager.accessGranted();
+        digitalWrite(SOLENOID_LOCK_PIN, auth);
+        globalSettings.sendMessage(true);
+    }
+
    public:
+    LCDDisplay lcdManager = LCDDisplay();
+
     void start() {
+        lcdManager.start();
+        lcdManager.wifi();
+        Network();
         globalSettings = GlobalSettings();
+        lcdManager.firebase();
         database = Database();
+        lcdManager.readingUser();
         database.readUserInfo(globalSettings);
         previousUpdateTime = millis();
-        lcdManager.start();
-        reset();
+        lcdManager.sensorSetUp();
         fingerScanner.fsSetup();
         rfid.start();
+        reset();
     }
 
     void getKey() {
         digitalWrite(SOLENOID_LOCK_PIN, auth);
 
-        checkDoor();
+        // checkDoor();
 
         if (millis() - previousUpdateTime < updateDelay) {
-            //printf("Update not ready\n");
+            // printf("Update not ready\n");
         } else {
             previousUpdateTime = millis();
             database.readUserInfo(globalSettings);
@@ -110,9 +120,8 @@ class AuthManager {
             } else {
                 if (!auth) {
                     rfid.read(auth, previousTime);
-                    if(auth) {
-                        digitalWrite(SOLENOID_LOCK_PIN, auth);
-                        globalSettings.sendMessage(true);
+                    if (auth) {
+                        grantAccess();
                     }
                 }
             }
@@ -126,8 +135,7 @@ class AuthManager {
                 if (!auth) {
                     fingerScanner.readSensor(auth, previousFinger);
                     if (auth) {
-                        digitalWrite(SOLENOID_LOCK_PIN, auth);
-                        globalSettings.sendMessage(true);
+                        grantAccess();
                     }
                 }
             }
@@ -160,11 +168,32 @@ class AuthManager {
         }
     }
 
-        void setPin(string s) {
+    void setPin(string s) {
         pin = "";
         for (char c : s) {
             pin += c;
         }
+    }
+
+    void reconnectingWifi() {
+        lcdManager.wifi();
+        Network();
+    }
+
+    void wifiStatus() {
+        bool connected = Network::isWifiConnected();
+        lcdManager.wifiStatus(connected);
+        if (!connected) {
+            start();
+        } else {
+            lcdManager.menu();
+        }
+    }
+
+    void updateUserSettings() {
+        lcdManager.readingUser();
+        database.readUserInfo(globalSettings);
+        lcdManager.menu();
     }
 
     void menuMode(char key) {
@@ -188,6 +217,11 @@ class AuthManager {
                 case 'D':
                     lcdManager.background();
                     break;
+                case '*':
+                    wifiStatus();
+                    break;
+                case '#':
+                    updateUserSettings();
                 default:
                     break;
             }
@@ -201,11 +235,7 @@ class AuthManager {
             if (success) {
                 auth = true;
                 previousTime = millis();
-                reset();
-                lcdManager.menu();
-                digitalWrite(SOLENOID_LOCK_PIN, auth);
-                globalSettings.sendMessage(true);
-                
+                grantAccess();
             } else {
                 mode = 1;
                 buffer = "";
@@ -213,7 +243,6 @@ class AuthManager {
             }
             return;
         } else if (c > 48 && c < 58) {
-            // printf("%s\n", String(c).c_str());
             buffer += String(c);
             lcdManager.pinMode(buffer);
         }
@@ -227,7 +256,6 @@ class AuthManager {
 
     void fingerprintMode() {
         previousFinger = millis();
-
     }
 
     void rfidMode() {
@@ -237,14 +265,5 @@ class AuthManager {
     void reset() {
         mode = 0;
         lcdManager.menu();
-    }
-
-    void enterCode() {
-        Serial.println("Enter pressed");
-        if (buffer.equals("1234"))
-            Serial.println("Correct password");
-        else
-            Serial.println("Incorrect password");
-        buffer = "";
     }
 };

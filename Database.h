@@ -189,26 +189,6 @@ class Database {
         }
     }
 
-    // void readPin(AuthManager &authManager) {
-    //     if (!isReady()) {
-    //         return;
-    //     }
-    //     string documentPath = "CurrentUser/Pin";
-    //     FirebaseJson content;
-    //     string path = "fields/value/string";
-    //     content.set(path, "");
-    //     if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-    //         Serial.println("Read operation postponed to create document!");
-    //         return;
-    //     }
-
-    //     if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-    //         authManager.setPin(Formatter::filterSingleString(fbdo.payload().c_str()));
-    //     } else {
-    //         Serial.println(fbdo.errorReason());
-    //     }
-    // }
-
     void writePin(bool auth) {
         if (!isReady()) {
             return;

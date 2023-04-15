@@ -285,9 +285,9 @@ class FingerprintScanner {
             Serial.println("Found fingerprint sensor!");
         } else {
             Serial.println("Did not find fingerprint sensor :(");
-            while (1) {
-                delay(1);
-            }
+            // while (1) {
+            //     delay(1);
+            // }
         }
 
         Serial.println(F("Reading sensor parameters"));

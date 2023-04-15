@@ -30,6 +30,10 @@ class Network {
         Serial.println(WiFi.localIP());
         Serial.println();
     }
+
+    static bool isWifiConnected() {
+        return WiFi.status() == WL_CONNECTED;
+    }
 };
 
 #endif

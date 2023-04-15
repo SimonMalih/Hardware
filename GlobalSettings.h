@@ -3,11 +3,9 @@
 
 #include <Arduino.h>
 #include <HTTPClient.h>
-
 #include <iostream>
 #include <sstream>
 #include <vector>
-
 #include "Database.h"
 
 using namespace std;
@@ -119,8 +117,6 @@ class GlobalSettings {
         }
     }
 
-    
-
     void sendMessage(bool success) {
         String base = buildURL("writeNotification");
         String type = success ? "type=entry" : "type=intruder";
@@ -133,8 +129,6 @@ class GlobalSettings {
         // if (settings[1])
         //     sendSMS(success);
     }
-
-
 };
 
 #endif

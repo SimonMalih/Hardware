@@ -3,20 +3,19 @@
 
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
-
 #include "Arduino.h"
 
 int lcdColumns = 16;
 int lcdRows = 2;
 
 // lcd1 - 0x27(39) | lcd2 - 0x25(3)
-
 LiquidCrystal_I2C lcd1(0x27, lcdColumns, lcdRows);
 LiquidCrystal_I2C lcd2(0x25, lcdColumns, lcdRows);
 
 class LCDDisplay {
    private:
     bool backlightOn = true;
+    String title[2] = {"    IOTHOME", "SECURITY SYSTEM"};
 
    public:
     void start() {
@@ -24,6 +23,31 @@ class LCDDisplay {
         lcd1.backlight();
         lcd2.init();
         lcd2.backlight();
+    }
+
+    void wifi() {
+        String lcd2Menu[2] = {" Connecting to", "    Wifi ..."};
+        print(title, 1);
+        print(lcd2Menu, 2);
+        delay(3000);
+    }
+
+    void firebase() {
+        String lcd2Menu[2] = {" Connecting to", "  Firebase ..."};
+        print(title, 1);
+        print(lcd2Menu, 2);
+    }
+
+    void readingUser() {
+        String lcd2Menu[2] = {"  Reading User", "    Settings"};
+        print(title, 1);
+        print(lcd2Menu, 2);
+    }
+
+    void sensorSetUp() {
+        String lcd2Menu[2] = {"   Setting Up", "Security Sensors"};
+        print(title, 1);
+        print(lcd2Menu, 2);
     }
 
     void findDisplayAddresses() {
@@ -77,13 +101,19 @@ class LCDDisplay {
         print(lcd2Menu, 2);
     }
 
+    void wifiStatus(bool connected) {
+        String message = connected ? "   CONNECTED" : "  DISCONNECTED";
+        String s[2] = {"  WIFI STATUS", message};
+        print(title, 1);
+        print(s, 2);
+        delay(3000);
+    }
+
     String displayCode(String s) {
         String codeString = "____";
-
         for (int i = 0; i < s.length(); i++) {
             codeString[i] = '*';
         }
-
         return codeString;
     }
 
@@ -95,7 +125,7 @@ class LCDDisplay {
     }
 
     void fingerprintMode() {
-        String lcd1FingerprintMode[2] = {"Place finger ", "on scanner"};
+        String lcd1FingerprintMode[2] = {"Place finger ", "on the scanner"};
         String lcd2FingerprintMode[2] = {"[C] to cancel", ""};
         print(lcd1FingerprintMode, 1);
         print(lcd2FingerprintMode, 2);
@@ -105,6 +135,12 @@ class LCDDisplay {
         String lcd1PinMode[2] = {"Tap RFID card", "on the scanner"};
         String lcd2PinMode[2] = {"[C] to cancel", ""};
         print(lcd1PinMode, 1);
+        print(lcd2PinMode, 2);
+    }
+
+    void accessGranted() {
+        String lcd2PinMode[2] = {" ACCESS GRANTED", "ENTER PROPERTY!"};
+        print(title, 1);
         print(lcd2PinMode, 2);
     }
 
