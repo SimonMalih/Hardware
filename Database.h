@@ -2,6 +2,7 @@
 #define DATABASE_H_
 
 #include <Firebase_ESP_Client.h>
+
 #include <iostream>
 #include <regex>
 #include <string>
@@ -45,27 +46,9 @@ class Database {
         }
     }
 
-    Database(const Database &) { initDatabase(); }
-
-    void initDatabase() {
-        config.api_key = API_KEY;
-        config.database_url = DATABASE_URL;
-
-        if (Firebase.signUp(&config, &auth, "", "")) {
-            Serial.println("ok");
-            signupOK = true;
-        } else {
-            Serial.printf("%s\n", config.signer.signupError.message.c_str());
-        }
-
-        config.token_status_callback = tokenStatusCallback;
-        Firebase.begin(&config, &auth);
-        Firebase.reconnectWiFi(true);
-    }
-
     bool isReady() {
         if (!Firebase.ready()) {
-            Serial.printf("Firebase was not ready!");
+            Serial.printf("Firebase was not ready!\n");
             return false;
         } else if (WiFi.status() != WL_CONNECTED) {
             Serial.printf("ESP32 is not connected to the wifi\n");
@@ -100,11 +83,9 @@ class Database {
 
     void read(Device &device) {
         if (!isReady()) {
-            printf("Firebase not ready\n");
             return;
         }
 
-        // attempt to create document if it doesnt exist
         string documentPath = "Devices/" + device.getPosition();
         FirebaseJson content;
         string path = "fields/value/" + device.getDataType();
@@ -124,45 +105,41 @@ class Database {
         }
     }
 
-    void readSettings(GlobalSettings &settings) {
+    void writeTemperature(int temperature) {
         if (!isReady()) {
             return;
         }
 
-        string documentPath = "CurrentUser/Settings";
+        string documentPath = "Devices/THERMOMETER1";
         FirebaseJson content;
-        string path = "fields/value/string";
-        content.set(path, "");
-        if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-            Serial.println("Read operation postponed to create document!");
-            return;
-        }
+        string path = "fields/value/integerValue";
+        content.set(path, String(temperature));
 
-        if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            //settings.updateSettings(Formatter::filterString(fbdo.payload().c_str(), "stringValue"));
-            //settings.printSettings();
+        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
+            return;
+        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+            Serial.printf("Successfully created firebase database document\n");
+            return;
         } else {
             Serial.println(fbdo.errorReason());
         }
     }
 
-    void readUser(GlobalSettings &settings) {
+    void writeHumidity(int humidity) {
         if (!isReady()) {
             return;
         }
 
-        string documentPath = "CurrentUser/CurrentUser";
+        string documentPath = "Devices/HUMIDITYSENSOR1";
         FirebaseJson content;
-        string path = "fields/value/string";
-        content.set(path, "");
-        if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-            Serial.println("Read operation postponed to create document!");
-            return;
-        }
+        string path = "fields/value/integerValue";
+        content.set(path, String(humidity));
 
-        if (Firebase.Firestore.getDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), "")) {
-            //settings.updateID(Formatter::filterSingleString(fbdo.payload().c_str()));
-            //printf("%s\n", fbdo.payload().c_str());
+        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
+            return;
+        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
+            Serial.printf("Successfully created firebase database document\n");
+            return;
         } else {
             Serial.println(fbdo.errorReason());
         }
@@ -187,66 +164,6 @@ class Database {
         } else {
             Serial.println(fbdo.errorReason());
         }
-    }
-
-    void writePin(bool auth) {
-        if (!isReady()) {
-            return;
-        }
-
-        string documentPath = "CurrentUser/Pin";
-        FirebaseJson content;
-        string path = "fields/value/integerValue";
-        content.set(path, (auth ? "1" : "0"));
-
-        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
-            return;
-        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-            Serial.printf("Successfully created firebase database document\n");
-            return;
-        } else {
-            Serial.println(fbdo.errorReason());
-        }
-    }
-
-    void write(int value) {
-        string documentPath = "Sensor/Steps";
-        FirebaseJson content;
-        string path = "fields/value/integerValue";  // integerValue or stringValue
-        content.set(path, String(value));
-
-        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
-            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-            return;
-        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-            Serial.printf("Successfully created firebase database document\n");
-            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-            return;
-        } else {
-            Serial.println(fbdo.errorReason());
-        }
-    }
-
-    void test(int value) {
-        string documentPath = "Sensor/Steps";
-        FirebaseJson content;
-        string path = "fields/value/integerValue";  // integerValue or stringValue
-        content.set(path, String(value));
-        path = "fields/hers/integerValue";  // integerValue or stringValue
-        content.set(path, String(value));
-
-        if (Firebase.Firestore.patchDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw(), "value")) {
-            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-            return;
-        } else if (Firebase.Firestore.createDocument(&fbdo, PROJECT_ID, "", documentPath.c_str(), content.raw())) {
-            Serial.printf("Successfully created firebase database document\n");
-            // Serial.printf("ok\n%s\n\n", fbdo.payload().c_str());
-            printf("Sucess");
-            return;
-        } else {
-            Serial.println(fbdo.errorReason());
-        }
-        
     }
 };
 
