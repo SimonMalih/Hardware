@@ -3,9 +3,11 @@
 #include <Arduino.h>
 #include <Keypad.h>
 #include <time.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <string>
+
 #include "FingerprintScanner.h"
 #include "GlobalSettings.h"
 #include "LCDDisplay.h"
@@ -191,8 +193,7 @@ class AuthManager {
     }
 
     void updateUserSettings() {
-        lcdManager.readingUser();
-        database.readUserInfo(globalSettings);
+        start();
         lcdManager.menu();
     }
 
@@ -242,9 +243,12 @@ class AuthManager {
                 lcdManager.pinMode("");
             }
             return;
-        } else if (c > 48 && c < 58) {
-            buffer += String(c);
-            lcdManager.pinMode(buffer);
+        } else if (c >= '0' && c <= '9') {
+            if (buffer.length() <= 4) {
+                buffer += String(c);
+                printf("%c\n", c);
+                lcdManager.pinMode(buffer);
+            }
         }
     }
 

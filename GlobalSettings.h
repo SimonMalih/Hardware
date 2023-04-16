@@ -103,7 +103,7 @@ class GlobalSettings {
             result.push_back(substr);
         }
 
-        // BkSsPV1qKCMj2JkiadCcZd0q1vO2|Simon|simon.malih@gmail.com|07482831705|1111|2222
+        printf("result size: %d\n", result.size());
         if (result.size() >= 6) {
             userId = result[0];
             name = result[1];
