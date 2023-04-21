@@ -1,5 +1,5 @@
-#ifndef LIGHTBULB_H_
-#define LIGHTBULB_H_
+#pragma once
+
 
 #include <iostream>
 
@@ -14,4 +14,3 @@ class Lightbulb : public Device {
     }
 };
 
-#endif

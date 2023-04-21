@@ -1,16 +1,15 @@
-#ifndef LCDDISPLAY_H_
-#define LCDDISPLAY_H_
+#pragma once
 
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include "Arduino.h"
 
-int lcdColumns = 16;
-int lcdRows = 2;
+#define LCD_COLS 16
+#define LCD_ROWS 2
 
 // lcd1 - 0x27(39) | lcd2 - 0x25(3)
-LiquidCrystal_I2C lcd1(0x27, lcdColumns, lcdRows);
-LiquidCrystal_I2C lcd2(0x25, lcdColumns, lcdRows);
+LiquidCrystal_I2C lcd1(0x27, LCD_COLS, LCD_ROWS);
+LiquidCrystal_I2C lcd2(0x25, LCD_COLS, LCD_ROWS);
 
 class LCDDisplay {
    private:
@@ -184,5 +183,3 @@ class LCDDisplay {
         currentLCD->print(s[1]);
     }
 };
-
-#endif

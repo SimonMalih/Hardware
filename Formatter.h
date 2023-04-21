@@ -1,5 +1,4 @@
-#ifndef FORMATTER_H_
-#define FORMATTER_H_
+#pragma once
 
 #include <ctype.h>
 #include <stdio.h>
@@ -119,4 +118,3 @@ class Formatter {
     }
 };
 
-#endif

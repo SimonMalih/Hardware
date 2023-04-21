@@ -1,5 +1,5 @@
-#ifndef PWMLED_H_
-#define PWMLED_H_
+#pragma once
+
 
 #include "Arduino.h"
 #include "Device.h"
@@ -49,4 +49,3 @@ class PWMLED : public Device {
     }
 };
 
-#endif

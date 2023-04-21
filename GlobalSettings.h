@@ -1,5 +1,4 @@
-#ifndef GLOBAL_SETTINGS_H_
-#define GLOBAL_SETTINGS_H_
+#pragma once
 
 #include <Arduino.h>
 #include <HTTPClient.h>
@@ -61,7 +60,7 @@ class GlobalSettings {
         if (httpCode > 0) {
             printf("HTTP request failed with code: %d\n", &httpCode);
         }
-        http.end();  // Free the resources
+        http.end(); 
         return;
     }
 
@@ -103,7 +102,6 @@ class GlobalSettings {
             result.push_back(substr);
         }
 
-        printf("result size: %d\n", result.size());
         if (result.size() >= 6) {
             userId = result[0];
             name = result[1];
@@ -126,9 +124,8 @@ class GlobalSettings {
         if (settings[0])
             sendEmail(success);
 
-        // if (settings[1])
-        //     sendSMS(success);
+        if (settings[1])
+            sendSMS(success);
     }
 };
 
-#endif

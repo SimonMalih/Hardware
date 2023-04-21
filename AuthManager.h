@@ -3,19 +3,17 @@
 #include <Arduino.h>
 #include <Keypad.h>
 #include <time.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <string>
-
 #include "FingerprintScanner.h"
 #include "GlobalSettings.h"
 #include "LCDDisplay.h"
 #include "Network.h"
 #include "RFID.h"
 
-#define ROW_NUM 4     // four rows
-#define COLUMN_NUM 4  // four columns
+#define ROW_NUM 4
+#define COLUMN_NUM 4
 #define MENU 0
 #define PIN 1
 #define FINGERPRINT 2
@@ -26,6 +24,7 @@
 class AuthManager {
    private:
     String buffer = "";
+    String pin = "";
     char keys[ROW_NUM][COLUMN_NUM] = {
         {'1', '2', '3', 'A'},
         {'4', '5', '6', 'B'},
@@ -34,35 +33,23 @@ class AuthManager {
 
     byte pin_rows[ROW_NUM] = {19, 18, 5, 33};     // GIOP19, GIOP18, GIOP5, GIOP33 connect to the row pins
     byte pin_column[COLUMN_NUM] = {25, 4, 0, 2};  // GIOP25, GIOP4, GIOP0, GIOP2 connect to the column pins
+    int mode = MENU;
+    bool auth = false;
+    int delayTime = 5000, doorDelayTime = 10000, rfidDelay = 10000, fingerDelay = 10000, messageDelay = 10000, updateDelay = 45000, doorDelay = 60000;
+    unsigned long previousTime = 0, previousDoorTimer = 0, previousRfid = 0, previousFinger = 0, previousMessage = 0, previousUpdateTime = 0;
+    int doorState = 0;
+
     Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
     RFID rfid = RFID();
     FingerprintScanner fingerScanner = FingerprintScanner();
-    int mode = MENU;
-    bool auth = false;
-    int delayTime = 10000;
-    int doorDelayTime = 10000;
-    int rfidDelay = 10000;
-    int fingerDelay = 10000;
-    int messageDelay = 10000;
-    unsigned long previousTime = 0;
-    unsigned long previousDoorTimer = 0;
-    unsigned long previousRfid = 0;
-    unsigned long previousFinger = 0;
-    unsigned long previousMessage = 0;
-    int doorDelay = 10000;
-    String pin = "";
-    int updateDelay = 45000;
-    int doorState = 0;
-    unsigned long previousUpdateTime = 0;
     GlobalSettings globalSettings;
-    Database database;
-    int doorSensorPin = 26;
+    LCDDisplay lcdManager = LCDDisplay();
 
     void checkDoor() {
-        doorState = digitalRead(doorSensorPin);
-        if (doorState == HIGH && !auth) {
+        doorState = digitalRead(DOOR_SENSOR_PIN);
+        if (doorState == LOW && !auth) {
             if (millis() - previousDoorTimer > doorDelay) {
-                printf("Intruder message sent!\n");
+                printf("Intruder message was sent!\n");
                 globalSettings.sendMessage(false);
                 previousDoorTimer = millis();
             }
@@ -76,7 +63,7 @@ class AuthManager {
     }
 
    public:
-    LCDDisplay lcdManager = LCDDisplay();
+    Database database;
 
     void start() {
         lcdManager.start();
@@ -96,12 +83,9 @@ class AuthManager {
 
     void getKey() {
         digitalWrite(SOLENOID_LOCK_PIN, auth);
+        checkDoor();
 
-        // checkDoor();
-
-        if (millis() - previousUpdateTime < updateDelay) {
-            // printf("Update not ready\n");
-        } else {
+        if (millis() - previousUpdateTime > updateDelay) {
             previousUpdateTime = millis();
             database.readUserInfo(globalSettings);
         }
@@ -246,7 +230,6 @@ class AuthManager {
         } else if (c >= '0' && c <= '9') {
             if (buffer.length() <= 4) {
                 buffer += String(c);
-                printf("%c\n", c);
                 lcdManager.pinMode(buffer);
             }
         }

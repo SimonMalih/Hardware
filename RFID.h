@@ -1,5 +1,4 @@
-#ifndef RFID_H
-#define RFID_H
+#pragma once
 
 #include <MFRC522.h>
 #include <SPI.h>
@@ -17,22 +16,15 @@ class RFID {
    public:
     String uid = "";
 
-    RFID() {
-    }
-
     void start() {
-        SPI.begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);  // init SPI bus
-        rfid.PCD_Init();                                      // init MFRC522
-        Serial.println("Tap an RFID/NFC tag on the RFID-RC522 reader\n");
+        SPI.begin(HSPI_SCLK, HSPI_MISO, HSPI_MOSI, HSPI_SS);
+        rfid.PCD_Init();                                      
+        Serial.println("RFID STARTED");
     }
 
     void read(bool &auth, unsigned long &previousTime) {
         if (rfid.PICC_IsNewCardPresent()) {    // new tag is available
-            printf("present\n");
-
             if (rfid.PICC_ReadCardSerial()) {  // NUID has been readed
-                printf("reading\n");
-
                 MFRC522::PICC_Type piccType = rfid.PICC_GetType(rfid.uid.sak);
                 //Serial.print("RFID/NFC Tag Type: \n");
                 //Serial.println(rfid.PICC_GetTypeName(piccType));
@@ -46,14 +38,11 @@ class RFID {
                 auth = true;
                 previousTime = millis();
                 Serial.println();
-                previousTime = millis();
-                //rfid.PICC_HaltA();       // halt PICC
-                //rfid.PCD_StopCrypto1();  // stop encryption on PCD
+                rfid.PICC_HaltA();       // halt PICC
+                rfid.PCD_StopCrypto1();  // stop encryption on PCD
                 delay(1000);
-                start(); 
+                start();  
             }
         }
     }
 };
-
-#endif

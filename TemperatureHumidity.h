@@ -1,11 +1,9 @@
 #pragma once
-
-#include <Adafruit_Sensor.h>
 #include <Arduino.h>
 #include <DHT.h>
 #include <Device.h>
 
-#define DHT_SENSOR_PIN 21  // ESP32 pin GIOP21 connected to DHT11 sensor
+#define DHT_SENSOR_PIN 21 
 #define DHT_SENSOR_TYPE DHT11
 
 DHT dht_sensor(DHT_SENSOR_PIN, DHT_SENSOR_TYPE);

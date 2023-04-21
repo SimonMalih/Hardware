@@ -4,11 +4,11 @@
 #include <Arduino.h>
 
 HardwareSerial serialPort(2);  // use UART2
-Adafruit_Fingerprint finger = Adafruit_Fingerprint(&serialPort);
 
 class FingerprintScanner {
    private:
     int id = 1;
+    Adafruit_Fingerprint finger = Adafruit_Fingerprint(&serialPort);
 
     uint8_t getFingerprintID(bool &auth, unsigned long &previousTime) {
         uint8_t p = finger.getImage();
@@ -31,7 +31,6 @@ class FingerprintScanner {
         }
 
         // OK success!
-
         p = finger.image2Tz();
         switch (p) {
             case FINGERPRINT_OK:

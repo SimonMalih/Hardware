@@ -1,5 +1,4 @@
-#ifndef TEMPERATURE_H_
-#define TEMPERATURE_H_
+#pragma once
 
 #include <DallasTemperature.h>
 #include <OneWire.h>
@@ -27,8 +26,6 @@ class Temperature : public Device {
         // Serial.println("ºF");
     }
 };
-
-#endif
 
 // #ifndef TEMPERATURE_H_
 // #define TEMPERATURE_H_

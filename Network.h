@@ -1,5 +1,4 @@
-#ifndef Network_H_
-#define Network_H_
+#pragma once
 
 #include <WiFi.h>
 
@@ -36,4 +35,3 @@ class Network {
     }
 };
 
-#endif

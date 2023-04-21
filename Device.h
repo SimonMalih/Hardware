@@ -1,5 +1,5 @@
-#ifndef DEVICE_H_
-#define DEVICE_H_
+#pragma once
+
 
 #include <iostream>
 
@@ -17,8 +17,6 @@ class Device {
 
     Type type;
     std::string position;
-
-    //float floatValue;
     int intValue = 3;
 
     std::string getDataType(){
@@ -81,4 +79,3 @@ class Device {
         this->type = LIGHTBULB;
     }
 };
-#endif
