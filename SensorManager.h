@@ -4,7 +4,6 @@
 #include "Database.h"
 #include "LightBulb.h"
 #include "LightSensor.h"
-#include "Temperature.h"
 #include "TemperatureHumidity.h"
 
 #define LIGHT1_PIN 16
@@ -14,7 +13,6 @@
 class SensorManager {
    private:
     Database database;
-    Temperature temp = Temperature("1");
     Lightbulb light1 = Lightbulb("1");
     Lightbulb light2 = Lightbulb("2");
     Lightbulb light3 = Lightbulb("3");
@@ -28,6 +26,7 @@ class SensorManager {
         database = Database();
         dht_sensor.begin();
     }
+
     void readSensors() {
         database.read(light1);
         digitalWrite(LIGHT1_PIN, light1.getBool());

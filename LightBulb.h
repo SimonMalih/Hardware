@@ -1,8 +1,6 @@
 #pragma once
 
-
 #include <iostream>
-
 #include "Device.h"
 
 class Lightbulb : public Device {
